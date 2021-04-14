@@ -1,5 +1,7 @@
 <?php
 
+
+
 class System
 {
 
@@ -33,6 +35,34 @@ class System
      * @var bool
      */
     public $_externalStorageUrl;
+
+    /**
+     * AWS S3 Bucket Storage
+     *
+     * @var bool
+     */
+    public $_s3bucketStorage;
+
+    /**
+     * AWS S3 Access Key
+     *
+     * @var string
+     */
+    public $_s3bucketAccesKey;
+
+    /**
+     * AWS S3 Secret Key
+     *
+     * @var string
+     */
+    public $_s3bucketSecretKey;
+
+    /**
+     * AWS S3 Secret Key
+     *
+     * @var string
+     */
+    public $_s3bucketRegion;
 
     /**
      * Use token on the operator link to view the request
@@ -76,6 +106,9 @@ class System
         $this->jquery = $this->getJqueryVersion();
         $this->summernote = $this->getSummerNoteVersion();
 
+        // Aws S3 Bucket Storage
+        $this->_s3bucketStorage = $this->getS3bucketStorage();
+
         // External storage settings
         $this->_externalStorage = $this->getExternalStorage();
         if ($this->_externalStorage) {
@@ -83,13 +116,60 @@ class System
             $this->_externalStorageUrl = $this->getExternalStorageUrl();
         }
 
+
         // Use of tokens in the request´s view url by the operator
         $this->_tokenOperatorLink = $this->getEnabledTokenOperatorLink();
 
         $this->logFile = $this->getLogFile('general');
         $this->logFileEmail = $this->getLogFile('email');
 
+
+
     }
+
+    /**
+     * Get AWS S3 Client
+     *
+     * @return objec AWS S3 Object
+     *
+     * @since 1.1.11 First time this was introduced.
+     *
+     * @author Rogerio Albandes <rogerio.albandes@helpdezk.cc>
+     */
+    public function getAwsS3Client()
+    {
+
+        $region    = $this->getConfig('s3bucket_region');
+        $accessKey = $this->getConfig('s3bucket_access_key');
+        $secretKey = $this->getConfig('s3bucket_secret_key');
+        $bucket    = $this->getConfig('s3bucket_name');
+        
+        require_once ($this->getHelpdezkPath() . '/includes/classes/pipegrep/awsClass.php');
+
+        $aws = new aws($region, $accessKey, $secretKey,$bucket);
+        return $aws;
+
+    }
+
+
+    /**
+     * Returns if AWS S3 Bucket Storage is set
+     *
+     * @return bool AWS S3 Bucket Storage is set
+     *
+     * @since 1.1.11 First time this was introduced.
+     *
+     * @author Rogerio Albandes <rogerio.albandes@helpdezk.cc>
+     */
+    public function getS3bucketStorage()
+    {
+        $s3bucketStorage = $this->getConfig('s3bucket_storage');
+        if (empty($s3bucketStorage) || $s3bucketStorage == false)
+            return false;
+        else
+            return $s3bucketStorage;
+    }
+  
 
     /**
      * Returns the login type of the person
@@ -266,15 +346,15 @@ class System
             $externalStoragePath = substr($externalStoragePath, 0, -1);
         }
 
-        $array = array("/files",
-            "/helpdezk/attachments/",
-            "/helpdezk/noteattachments/",
-            "/helpdezk/dashboard/",
-            "/tmp",
-            "/logs",
-            "/icons",
-            "/logos/default/",
-            "/photos/default/");
+        $array = array( "/files",
+                        "/helpdezk/attachments/",
+                        "/helpdezk/noteattachments/",
+                        "/helpdezk/dashboard/",
+                        "/tmp",
+                        "/logs",
+                        "/icons",
+                        "/logos/default/",
+                        "/photos/default/");
 
         if (!file_exists($externalStoragePath)) {
             die ("The external storage directory does not exist: {$externalStoragePath}, method: " . __METHOD__ . ", line: " . __LINE__);
